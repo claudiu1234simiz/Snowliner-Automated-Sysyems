@@ -8,10 +8,10 @@ const RANK_ORDER = [
   "Mr. Wilhelm",
   "Head Administrator",
   "Moderator",
-  "Security Forces",
-  "Brakemen Department",
   "Developement Engineer",
   "Hospitality Department",
+  "Security Forces",
+  "Brakemen Department",
   "Sector Worker",
   "1st Class Passanger",
   "2nd Class Passanger",
@@ -37,7 +37,7 @@ const RANK_ICONS = {
 let messageId = null;
 
 const fetchTeamData = async () => {
-  const res = await fetch('snowliner-automated-systems-team-count.up.railway.app');
+  const res = await fetch('https://snowliner-automated-systems-team-count.up.railway.app/team-counts');
   const data = await res.json();
   return data.teams || {};
 };
