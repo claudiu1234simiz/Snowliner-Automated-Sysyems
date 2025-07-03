@@ -44,8 +44,8 @@ const fetchTeamData = async () => {
 
 const createEmbed = (teams) => {
   const embed = new EmbedBuilder()
-    .setColor('#0099ff')
-    .setTitle('🚄 Live Team Roster')
+    .setColor('#0D3F53')
+    .setTitle('# 🚄 Live Team Roster')
     .setFooter({ text: `Last updated: ${new Date().toLocaleTimeString()}` });
 
   const totalPlayers = Object.values(teams).reduce((sum, members) => sum + members.length, 0);
