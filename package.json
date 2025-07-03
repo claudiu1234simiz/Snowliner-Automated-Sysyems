@@ -1,6 +1,7 @@
 {
   "name": "snowliner-discord-bot",
   "version": "1.0.0",
+  "description": "Live-updating Discord bot for Snowliner team counts",
   "main": "index.js",
   "type": "module",
   "scripts": {
