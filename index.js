@@ -2,6 +2,24 @@ const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 require('dotenv').config();
 
+// 🔒 Check env vars
+if (!process.env.DISCORD_TOKEN || !process.env.CHANNEL_ID) {
+  console.error("❌ Missing DISCORD_TOKEN or CHANNEL_ID in .env");
+  process.exit(1);
+}
+
+console.log("▶️ Starting Snowliner Bot");
+console.log("CHANNEL_ID:", process.env.CHANNEL_ID);
+
+// 🧱 Crash logging
+process.on('unhandledRejection', (reason) => {
+  console.error('[Unhandled Rejection]', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Uncaught Exception]', err);
+});
+
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 const RANK_ORDER = [
@@ -36,16 +54,23 @@ const RANK_ICONS = {
 
 let messageId = null;
 
+// 🔁 Fetch team data from backend
 const fetchTeamData = async () => {
-  const res = await fetch('https://snowliner-automated-systems-team-count.up.railway.app/team-counts');
-  const data = await res.json();
-  return data.teams || {};
+  try {
+    const res = await fetch('https://snowliner-automated-systems-team-count.up.railway.app/team-counts');
+    const data = await res.json();
+    return data.teams || {};
+  } catch (err) {
+    console.error("⚠️ Failed to fetch team data:", err);
+    return {};
+  }
 };
 
+// 🧱 Create embed layout
 const createEmbed = (teams) => {
   const embed = new EmbedBuilder()
     .setColor('#0D3F53')
-    .setTitle('**🚄 Live Team Roster**')
+    .setTitle('🚄 **Live Team Roster**')
     .setFooter({ text: `Last updated: ${new Date().toLocaleTimeString()}` });
 
   const totalPlayers = Object.values(teams).reduce((sum, members) => sum + members.length, 0);
@@ -73,10 +98,17 @@ const createEmbed = (teams) => {
   return embed;
 };
 
+// 🚀 On bot ready
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
-  const channel = await client.channels.fetch(process.env.CHANNEL_ID);
+  let channel;
+  try {
+    channel = await client.channels.fetch(process.env.CHANNEL_ID);
+  } catch (err) {
+    console.error('❌ Failed to fetch channel. Make sure the bot has access.', err);
+    process.exit(1);
+  }
 
   const updateEmbed = async () => {
     const teams = await fetchTeamData();
@@ -95,8 +127,9 @@ client.once('ready', async () => {
     }
   };
 
-  await updateEmbed(); // first push
+  await updateEmbed();             // initial run
   setInterval(updateEmbed, 60000); // every 60s
 });
 
+// 🔐 Login the bot
 client.login(process.env.DISCORD_TOKEN);
