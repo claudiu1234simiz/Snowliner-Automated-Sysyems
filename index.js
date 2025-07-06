@@ -128,7 +128,7 @@ client.once('ready', async () => {
   };
 
   await updateEmbed();             // initial run
-  setInterval(updateEmbed, 60000); // every 60s
+  setInterval(updateEmbed, 30000); // every 30s
 });
 
 // 🔐 Login the bot
