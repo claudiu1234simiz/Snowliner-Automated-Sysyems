@@ -2,24 +2,6 @@ const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 require('dotenv').config();
 
-// 🔒 Check env vars
-if (!process.env.DISCORD_TOKEN || !process.env.CHANNEL_ID) {
-  console.error("❌ Missing DISCORD_TOKEN or CHANNEL_ID in .env");
-  process.exit(1);
-}
-
-console.log("▶️ Starting Snowliner Bot");
-console.log("CHANNEL_ID:", process.env.CHANNEL_ID);
-
-// 🧱 Crash logging
-process.on('unhandledRejection', (reason) => {
-  console.error('[Unhandled Rejection]', reason);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('[Uncaught Exception]', err);
-});
-
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 const RANK_ORDER = [
@@ -28,6 +10,7 @@ const RANK_ORDER = [
   "Moderator",
   "Developement Engineer",
   "Hospitality Department",
+  "Judicial Department", // ✅ Added here
   "Security Forces",
   "Brakemen Department",
   "Sector Worker",
@@ -41,10 +24,11 @@ const RANK_ICONS = {
   "Mr. Wilhelm": "👑",
   "Head Administrator": "🧠",
   "Moderator": "🔧",
-  "Security Forces": "🛡️",
-  "Brakemen Department": "🚨",
   "Developement Engineer": "🛠️",
   "Hospitality Department": "🍽️",
+  "Judicial Department": "🏛️", // ✅ New icon
+  "Security Forces": "🛡️",
+  "Brakemen Department": "🚨",
   "Sector Worker": "🔩",
   "1st Class Passanger": "💎",
   "2nd Class Passanger": "👜",
@@ -54,24 +38,17 @@ const RANK_ICONS = {
 
 let messageId = null;
 
-// 🔁 Fetch team data from backend
 const fetchTeamData = async () => {
-  try {
-    const res = await fetch('https://snowliner-automated-systems-team-count.up.railway.app/team-counts');
-    const data = await res.json();
-    return data.teams || {};
-  } catch (err) {
-    console.error("⚠️ Failed to fetch team data:", err);
-    return {};
-  }
+  const res = await fetch('https://snowliner-automated-systems-team-count.up.railway.app/team-counts');
+  const data = await res.json();
+  return data.teams || {};
 };
 
-// 🧱 Create embed layout
 const createEmbed = (teams) => {
   const embed = new EmbedBuilder()
     .setColor('#0D3F53')
-    .setTitle('🚄 **Live Team Roster**')
-    .setFooter({ text: `Last updated: ${new Date().toLocaleTimeString()}` });
+    .setTitle('**🚄 Snowliner Live Team Roster**')
+    .setFooter({ text: `🔄 Last updated: ${new Date().toLocaleTimeString()}` });
 
   const totalPlayers = Object.values(teams).reduce((sum, members) => sum + members.length, 0);
 
@@ -98,17 +75,10 @@ const createEmbed = (teams) => {
   return embed;
 };
 
-// 🚀 On bot ready
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
-  let channel;
-  try {
-    channel = await client.channels.fetch(process.env.CHANNEL_ID);
-  } catch (err) {
-    console.error('❌ Failed to fetch channel. Make sure the bot has access.', err);
-    process.exit(1);
-  }
+  const channel = await client.channels.fetch(process.env.CHANNEL_ID);
 
   const updateEmbed = async () => {
     const teams = await fetchTeamData();
@@ -122,14 +92,35 @@ client.once('ready', async () => {
         const msg = await channel.messages.fetch(messageId);
         await msg.edit({ embeds: [embed] });
       }
+      console.log(`📟 Embed updated at ${new Date().toLocaleTimeString()}`);
     } catch (err) {
       console.error('❌ Embed update failed:', err);
     }
   };
 
-  await updateEmbed();             // initial run
-  setInterval(updateEmbed, 30000); // every 30s
+  // ⏱ Hammer Time Loop (minute synced)
+  const loopUpdate = async () => {
+    try {
+      await updateEmbed();
+    } catch (err) {
+      console.error("❌ Embed update error:", err);
+    }
+
+    const now = new Date();
+    const nextMinute = new Date(now.getTime() + 60000);
+    nextMinute.setSeconds(0, 0);
+    const delay = nextMinute - now;
+    setTimeout(loopUpdate, delay);
+  };
+
+  const syncToNextMinute = () => {
+    const now = new Date();
+    const seconds = now.getSeconds();
+    const millisToNextMinute = (30 - seconds) * 1000;
+    setTimeout(loopUpdate, millisToNextMinute);
+  };
+
+  syncToNextMinute(); // ⏰ Initial sync
 });
 
-// 🔐 Login the bot
 client.login(process.env.DISCORD_TOKEN);
